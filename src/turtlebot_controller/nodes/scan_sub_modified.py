@@ -11,6 +11,108 @@ from visualization_msgs.msg import Marker
 import math
 import random
 
+def seperate(raw_list):
+
+    objects = []
+    points = []
+    last_point_was_data = False
+    last_point = 0
+    iterator = 0
+    for point in raw_list:
+        iterator += 1
+
+        if last_point_was_data:
+            points = []
+            last_point_was_data = False
+            #print "emptying points array"
+        
+        if str(point) != "inf":
+            points.append(point)
+            #print "appending point"
+
+        if str(point) == "inf" and str(last_point) != "inf" and iterator > 1:
+            objects.append(points)
+            last_point_was_data = True
+            #print "object ended appended point array to objects"
+            #print str(point)
+            #print str(iterator)
+
+        last_point = point
+
+
+    return objects  
+
+def get_index_of_closest(point_list):
+
+    iterator = 0
+    buffer = 99999
+    index = 0
+
+    for point in point_list:
+        if point < buffer:
+            buffer = point
+            index = iterator
+
+
+        iterator += 1
+
+
+    return index
+
+def cut_array(point_list, index):
+    if len(point_list)/2 > index:
+        return point_list[index:]
+    else:
+        new_list = point_list[:index+1]
+        new_list.reverse()
+        return new_list
+
+def triangle_calc(a, beta,c):
+
+    #convert to radians for correct results
+    beta = math.radians(beta)
+
+    #calc b
+    b = math.sqrt(a**2 + c**2 - 2 * a * c * math.cos(beta))
+    #print a
+    #print b
+    #print c
+    #print beta
+
+    gamma = math.acos((a**2 + b**2 - c**2) / (2 * a * b))
+    gamma = math.degrees(gamma)
+
+    return gamma
+
+
+def form_detection(point_list, angle_per_point):
+
+    #get len of third line
+    length = len(point_list)
+
+    if length >= 5:
+        half = int(length/2)
+        a = point_list[0]
+        c = point_list[half-1]
+        gamma1 = triangle_calc(a,half*angle_per_point,c)
+        c2 = point_list[length-1]
+        gamma2 = triangle_calc(a,length*angle_per_point,c2)
+
+        #print gamma1
+        #print gamma2
+
+        #angle deviation allowed should be gathered from conf server ~
+        angle_deviation = 10
+
+        if abs(gamma1-gamma2) > angle_deviation:
+            return "probably not a square"
+        else:
+            return "probably a square"
+
+    return "yeet we dont have enough points"
+
+
+
 
 def getmoving():
     rospy.wait_for_service('getmoving')
@@ -106,6 +208,7 @@ class PRegulator:
     def update_lin_speed(self):
         try:
             if getmoving():
+                #print getmoving()
                 self.speed.linear.x = self.max_speed
             else:
                 self.speed.linear.x = 0
@@ -181,11 +284,34 @@ def laserdistance(tuple_msg):
     sorted_list = list(tuple_msg)
     sorted_list.sort()
 
+    unsorted_list = list(tuple_msg)
+
+    objects = []
+    objects = seperate(unsorted_list)
+
+    angle_offset =0
+    for form in objects:
+        #print "we got an object"
+        #print "object len is: " + str(len(form))
+        index = get_index_of_closest(form)
+        #cutting array
+        #we cut the array to only work with the larger area
+        form = cut_array(form, index)
+        #print "new length = " + str(len(form))
+
+        #second parameter is angle per point -> should get this from parameter server but its sunday so i dont care that much
+        detected = form_detection(form, 1)
+        #print "------------\n"
+        if detected == "probably a square":
+            angle_offset = 270
+            #print "yeeeeeeeeeeeet"
+
+
     angle, angle_error = p_reg.get_angle(tuple_msg,sorted_list[0])
-    p_reg.correct_angle(angle,angle_error)
+    p_reg.correct_angle((angle+angle_offset),angle_error)
     p_reg.update_lin_speed()
     p_reg.publish_speed()
-    a,b = p_reg.cylinder_position(angle, sorted_list[0])
+    #a,b = p_reg.cylinder_position(angle, sorted_list[0])
 
     #if(sorted_list[0] < 0.5):
     #    p_reg.set_speed(0)
@@ -197,7 +323,7 @@ def laserdistance(tuple_msg):
         print "angle_error: "+ str(angle_error)
         print "speed linear: "+ str(p_reg.speed.linear.x)
         print "speed angular: "+ str(p_reg.speed.angular.z)
-        print "pillar position:\n\ta: "+str(a)+"\n\tb: "+str(b)
+        #print "pillar position:\n\ta: "+str(a)+"\n\tb: "+str(b)
         counter = 0
     else:
         counter += 1

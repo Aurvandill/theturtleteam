@@ -1,4 +1,14 @@
 scan_topicname: "/scan"
 odom_topicname: "/odom"
 vel_topicname: "/cmd_vel"
+marker_topicname: "/visualization_marker"
 queue_size: "1"
+min_angle: 0.0
+max_angle: 360.0
+max_angle_correction: 2.0
+
+speed: 0.4
+brake_distance: 0.0
+
+crash_topicname: /imu
+max_dec: 3.0

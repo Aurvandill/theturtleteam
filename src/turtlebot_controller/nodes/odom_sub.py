@@ -84,7 +84,7 @@ def callback(msg):
     #print vel
     #to print not every message to a a dirty hack here
     if counter > max_counter and vel:
-        print "\nTotal Travel Distance: "+str(formated_travel)+"m\n"
+        print "Total Travel Distance: "+str(formated_travel)+"m"
         counter = 0
     else:
         counter += 1
