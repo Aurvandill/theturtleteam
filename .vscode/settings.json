@@ -2,5 +2,9 @@
     "python.autoComplete.extraPaths": [
         "/home/bernd/catkin_ws/devel_isolated/turtlebot3_msgs/lib/python2.7/dist-packages",
         "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/bernd/catkin_ws/devel_isolated/turtlebot3_msgs/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
     ]
 }
