@@ -167,6 +167,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   nodes/odom_sub.py
+  nodes/mover.py
   nodes/scan_sub.py
   nodes/scan_sub_modified.py
   nodes/emergency_break.py
