@@ -168,6 +168,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   nodes/odom_sub.py
   nodes/mover.py
+  nodes/testmarker_pub.py
   nodes/scan_sub.py
   nodes/scan_sub_modified.py
   nodes/emergency_break.py
