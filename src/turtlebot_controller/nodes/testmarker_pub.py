@@ -50,22 +50,36 @@ p0.z = 0
 marker.points.append(p0)
 
 p1 = Point()
-p1.x = 1.0
-p1.y = -1.0
+p1.x = 2.0
+p1.y = 1.0
 p1.z = 0
 marker.points.append(p1)
 
 p2 = Point()
-p2.x = -1.0
-p2.y = -1.0
+p2.x = 2.0
+p2.y = 2.0
 p2.z = 0
 marker.points.append(p2)
 
 p3 = Point()
-p3.x = -1.0
-p3.y = 1.0
+p3.x = 3.0
+p3.y = 2.0
 p3.z = 0
 marker.points.append(p3)
+
+p4 = Point()
+p4.x = 3.0
+p4.y = 1.0
+p4.z = 0
+marker.points.append(p4)
+
+p5 = Point()
+p5.x = 1.0
+p5.y = 0.0
+p5.z = 0
+marker.points.append(p5)
+
+
 
 #for out dirty hack
 max_counter = 20
