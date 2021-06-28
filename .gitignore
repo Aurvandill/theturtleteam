@@ -1,0 +1,9 @@
+/.vscode
+/build
+/build_isolated
+/devel
+/devel_isolated
+/install
+/src/turtlebot3
+/src/turtlebot3_msgs
+/src/turtlebot3_simulations
