@@ -89,7 +89,7 @@ counter = 0
 print "robot_test marker pub starte"
 
 rospy.init_node("robot_testmarker_pub")
-r = rospy.Rate(10)
+r = rospy.Rate(50)
 
 main()
 

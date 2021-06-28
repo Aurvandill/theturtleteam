@@ -31,10 +31,10 @@ y_pos = 0
 #vars for angle correction
 min_angle = rospy.get_param("min_angle",0.0)
 max_angle = rospy.get_param("max_angle",360.0)
-max_correction = rospy.get_param("max_angle_correction",5.0)
+max_correction = rospy.get_param("max_angle_correction",2.5)
 
 #maximum angle difference to start moving
-angle_offset = rospy.get_param("angle_offset",20.0)
+angle_offset = rospy.get_param("angle_offset",10.0)
 
 #tolerance to goal point were we consider it reached
 distance_tolerance = rospy.get_param("distance_tolerance",0.05)
@@ -43,10 +43,10 @@ distance_tolerance = rospy.get_param("distance_tolerance",0.05)
 acc_time = rospy.get_param("acceleration_time",1.5)
 
 #maximum robot moving speed
-max_speed = rospy.get_param("max_speed",1.2)
+max_speed = rospy.get_param("max_speed",1.0)
 
 #important for calculation of linear speed
-break_distance = rospy.get_param("break_distance",1.0)
+break_distance = rospy.get_param("break_distance",0.5)
 old_time = 0.0
 speed = 0.0
 
@@ -63,13 +63,26 @@ def get_correction(angle):
     global max_correction
     global min_angle
 
-    if angle < max_angle/2:
-        angular_speed = 0.0+((max_correction/(max_angle/2))*angle)
+    #print angle
+    if angle < 0:
+
+        if abs(angle) < max_angle/2:
+            #lefthandturn
+            angular_speed = 0.0-((max_correction/(max_angle/2))*abs(angle))
 
         #if our angle is larger than 180 we steer to the right side (negative z)
+        else:
+            #righthandturn
+            angular_speed = 0.0+((max_correction/(max_angle/2))*(max_angle-abs(angle)))
     else:
-        angular_speed = 0.0-((max_correction/(max_angle/2))*(max_angle-angle))
+        if abs(angle) < max_angle/2:
+            #righthandturn
+            angular_speed = 0.0+((max_correction/(max_angle/2))*abs(angle))
 
+        #if our angle is larger than 180 we steer to the right side (negative z)
+        else:
+            #lefthandturn
+            angular_speed = 0.0-((max_correction/(max_angle/2))*(max_angle-abs(angle)))
     return angular_speed
 
 def angle_calc(goal_x,goal_y,self_x,self_y):
@@ -113,15 +126,25 @@ def get_speed(distance, angle_deviation):
 
     if angle_correction_speed > max_speed:
         angle_correction_speed = max_speed
+    
+    
+    #stuff
+    break_speed = 9999
+    acc_speed = 9999
 
     #breaking
     if distance < break_distance:
-        speed = (angle_correction_speed/break_distance) * distance
+        break_speed = (angle_correction_speed/break_distance) * distance
     else:
         #default speed + acceleration
         if old_time > 0.0:
             
-            speed += angle_correction_speed/acc_time *  (now-old_time)
+            acc_speed = speed+ angle_correction_speed/acc_time *  (now-old_time)
+
+    if break_speed > acc_speed:
+        speed = acc_speed
+    else:
+        speed = break_speed
 
     ##if angle deviation is too high
     #if abs(angle_deviation) > angle_offset:
