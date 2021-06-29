@@ -3,6 +3,7 @@
 from turtlebot_controller import main
 
 import rospy
+from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Twist
 from visualization_msgs.msg import Marker, MarkerArray
@@ -50,11 +51,105 @@ break_distance = rospy.get_param("break_distance",0.5)
 old_time = 0.0
 speed = 0.0
 
+#variable to see if we reached the last checkpoint
+finished = False
 
-#point counter
+#variable to store laser data array in
+laser_vals = list()
+
+#how far after the half we want to evaluate laser data for exit location
+laser_angle_offset = rospy.get_param("laser_angle_offset",160)
+
+#var how many free points are considered an exit
+min_free_spots = rospy.get_param("min_free_spots",20)
+
+#var to store if we calculated our exit point
+calculated_exit = False
+#final x and y coords
+final_x = 0
+final_y = 0
+
+reached_finish = False
+
+#point counter for our checkpoints
 p_counter = 0
 
+def get_final_point(laser_list):
+    global x_pos
+    global y_pos
+    global laser_angle_offset
+    global min_free_spots
+    global yaw
+    global final_x
+    global final_y
 
+    end_x = 0
+    end_y = 0
+
+    new_list = list()
+    
+    print "laenge lsite laserdaten: "+str(len(laser_list))
+    i = len(laser_list) - laser_angle_offset
+    while i < len(laser_list):
+        new_list.append(laser_list[i])
+        i += 1
+
+    i = 0
+    while i < laser_angle_offset:
+        new_list.append(laser_list[i])
+        i += 1
+    
+    print "laenge lsite laserdaten verarbeitet: "+str(len(new_list))
+
+    i = 0
+    last_val = "9999"
+    start_of_hole = 9999
+    end_of_hole = 9999
+    while i < len(new_list):
+        print last_val
+        print i
+        print str(new_list[i])
+        print "--------------------"
+        if last_val == "inf" and start_of_hole == 9999:
+            start_of_hole = i-1
+        
+        if str(new_list[i]) != "inf" and last_val =="inf" and start_of_hole != 9999:
+            end_of_hole = i-1
+
+        last_val = str(new_list[i])
+        i += 1
+
+    #angle calculation
+    print "we found "+str(abs(start_of_hole-end_of_hole))+" consecutive free spots in laser data"
+    print "start of hole: "+str(start_of_hole)
+    print "end of hole: "+str(end_of_hole)
+
+    if abs(start_of_hole-end_of_hole) > min_free_spots:
+        print "hole is large enough"
+
+        #get middle of hole
+        middle = start_of_hole + (abs(end_of_hole-start_of_hole)/2)
+
+        #get angle
+        #we assume one point is 1 degree
+        angle = middle - laser_angle_offset + yaw
+
+        print "middle of hole: " + str(middle)
+        print "angle relative to robot: " + str(middle - laser_angle_offset)
+        print "world angle: " + str(angle)
+        #calculate new point
+
+        final_x = x_pos + (0.75 * math.cos(math.radians(angle)))
+        final_y = y_pos + (0.75 * math.sin(math.radians(angle))) 
+
+        print "finaler punkt x/y:" +str(final_x)+"/"+str(final_y)
+
+    else:
+        print "hole is not large enough to be classified as exit"
+
+def callback_laser(msg):
+    global laser_vals
+    laser_vals = list(msg.ranges)
 
 def get_correction(angle):
     #angle = abs(angle)
@@ -174,10 +269,18 @@ def callback_marker(msg):
     global y_pos
     global yaw
     global angle_offset
+    global finished
+    global laser_vals
+    global reached_finish
 
+    if not finished:
+        marker_x = msg.points[p_counter].x
+        marker_y = msg.points[p_counter].y
+    else:
+        
+        marker_x = final_x
+        marker_y = final_y
 
-    marker_x = msg.points[p_counter].x
-    marker_y = msg.points[p_counter].y
     
     #calculate angle to point we want to move to
     target_angle, distance = angle_calc(marker_x,marker_y,x_pos,y_pos)
@@ -186,25 +289,34 @@ def callback_marker(msg):
     speed = Twist()
 
     #speed.angular.z = get_correction(target_angle-yaw+angle_correction)
-    speed.angular.z = get_correction(target_angle-yaw)
-    speed.linear.x, reached_goal = get_speed(distance,target_angle-yaw)
+    if not reached_finish:
+        speed.angular.z = get_correction(target_angle-yaw)
+        speed.linear.x, reached_goal = get_speed(distance,target_angle-yaw)
+    else:
+        speed.angular.z = 0
+        speed.linear.x, reached_goal = 0, False
     #speed.linear.x = 0.2
     if reached_goal:
         print "reached checkpoint"
         p_counter += 1
+        if finished:
+            print "finished moving to target"
+            reached_finish = True
         if p_counter >= len(msg.points):
-            p_counter = 0
+            if not finished:
+                get_final_point(laser_vals)
+                finished = True            
 
     #publish speed
     speed_pub.publish(speed)
-    print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
-    print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
-    print "------------speed: " + str(speed.linear.x)
-    print "--target distance: "+str(distance)
-    print "-----target_angle: " + str(target_angle)
-    print "------orientation: " + str(yaw)
-    print "-correction_angle: "+str(target_angle-yaw)
-    print "-------------------------------------------"
+    #print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
+    #print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
+    #print "------------speed: " + str(speed.linear.x)
+    #print "--target distance: "+str(distance)
+    #print "-----target_angle: " + str(target_angle)
+    #print "------orientation: " + str(yaw)
+    #print "-correction_angle: "+str(target_angle-yaw)
+    #print "-------------------------------------------"
 
 def callback_odom(msg):
     
@@ -235,12 +347,15 @@ rospy.init_node('odom_sub')
 
 odom_topic = rospy.get_param("odom_topicname","/odom")
 marker_topic = rospy.get_param("marker_topicname","/marker")
+scan_topic = rospy.get_param("scan_topicname","/scan")
 
 print marker_topic
 print odom_topic
+print scan_topic
 
 odom_sub = rospy.Subscriber(str(odom_topic), Odometry, callback_odom)
 marker_sub = rospy.Subscriber(str(marker_topic), Marker, callback_marker)
+scan_sub = rospy.Subscriber(str(scan_topic),LaserScan, callback_laser)
 
 print "mover started"
 
