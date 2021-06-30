@@ -3,16 +3,20 @@ project(turtlebot_controller)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
-
+add_definitions(--std=c++11)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
-  geometry_msgs
   message_generation
+  roscpp
   std_msgs
+  nav_msgs
+  tf
+  geometry_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -58,12 +62,7 @@ catkin_python_setup()
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-   ToggleMovement.srv
-   GetLinearSpeed.srv
-   SetMoving.srv
-   GetMoving.srv
-   GetTarget.srv
-   SetTarget.srv
+   turtle_srvs.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -77,6 +76,7 @@ add_service_files(
 generate_messages(
   DEPENDENCIES
   sensor_msgs
+  nav_msgs
 )
 
 ################################################
@@ -111,7 +111,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES turtlebot_controller
-  CATKIN_DEPENDS rospy sensor_msgs message_runtime
+  CATKIN_DEPENDS rospy sensor_msgs message_runtime roscpp std_msgs nav_msgs visualization_msgs tf
 #  DEPENDS system_lib
 )
 
@@ -166,16 +166,8 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  nodes/odom_sub.py
   nodes/mover.py
-  nodes/testmarker_pub.py
-  nodes/scan_sub.py
-  nodes/scan_sub_modified.py
-  nodes/emergency_break.py
-  nodes/crash_break.py
-  nodes/robot_state_pub.py
-  nodes/object_detection.py
-  scripts/movementserver.py
+  nodes/markerService.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -200,12 +192,18 @@ catkin_install_python(PROGRAMS
 #   PATTERN ".svn" EXCLUDE
 # )
 
+catkin_package()
+
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(FILES
+  launch/turtlebot_labyrinth.launch
+  config/config.yaml
+  map/rotatedMap.pgm
+  map/rotatedMap.yaml
+  rviz/rviz_map.rviz
+  worlds/Labyrinth-Abschlusspaesentationworld.world
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 #############
 ## Testing ##
@@ -219,3 +217,7 @@ catkin_install_python(PROGRAMS
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(new_algorythm nodes/new_algorythm.cpp)
+target_link_libraries(new_algorythm ${catkin_LIBRARIES})
+add_dependencies(new_algorythm turtlebot_controller_gencpp)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from turtlebot_controller import main
 
@@ -35,19 +35,19 @@ max_angle = rospy.get_param("max_angle",360.0)
 max_correction = rospy.get_param("max_angle_correction",2.5)
 
 #maximum angle difference to start moving
-angle_offset = rospy.get_param("angle_offset",10.0)
+angle_offset = rospy.get_param("angle_offset",15.0)
 
 #tolerance to goal point were we consider it reached
-distance_tolerance = rospy.get_param("distance_tolerance",0.05)
+distance_tolerance = rospy.get_param("distance_tolerance",0.02)
 
 #time over which we want to accelerate
-acc_time = rospy.get_param("acceleration_time",1.5)
+acc_time = rospy.get_param("acceleration_time",5.0)
 
 #maximum robot moving speed
-max_speed = rospy.get_param("max_speed",1.0)
+max_speed = rospy.get_param("max_speed",0.5)
 
 #important for calculation of linear speed
-break_distance = rospy.get_param("break_distance",0.5)
+break_distance = rospy.get_param("break_distance",0.3)
 old_time = 0.0
 speed = 0.0
 
@@ -88,7 +88,7 @@ def get_final_point(laser_list):
 
     new_list = list()
     
-    print "laenge lsite laserdaten: "+str(len(laser_list))
+    print("laenge lsite laserdaten: "+str(len(laser_list)))
     i = len(laser_list) - laser_angle_offset
     while i < len(laser_list):
         new_list.append(laser_list[i])
@@ -99,17 +99,17 @@ def get_final_point(laser_list):
         new_list.append(laser_list[i])
         i += 1
     
-    print "laenge lsite laserdaten verarbeitet: "+str(len(new_list))
+    print ("laenge lsite laserdaten verarbeitet: "+str(len(new_list)))
 
     i = 0
     last_val = "9999"
     start_of_hole = 9999
     end_of_hole = 9999
     while i < len(new_list):
-        print last_val
-        print i
-        print str(new_list[i])
-        print "--------------------"
+        print(last_val)
+        print (i)
+        print (str(new_list[i]))
+        print ("--------------------")
         if last_val == "inf" and start_of_hole == 9999:
             start_of_hole = i-1
         
@@ -120,12 +120,12 @@ def get_final_point(laser_list):
         i += 1
 
     #angle calculation
-    print "we found "+str(abs(start_of_hole-end_of_hole))+" consecutive free spots in laser data"
-    print "start of hole: "+str(start_of_hole)
-    print "end of hole: "+str(end_of_hole)
+    print ("we found "+str(abs(start_of_hole-end_of_hole))+" consecutive free spots in laser data")
+    print ("start of hole: "+str(start_of_hole))
+    print ("end of hole: "+str(end_of_hole))
 
     if abs(start_of_hole-end_of_hole) > min_free_spots:
-        print "hole is large enough"
+        print ("hole is large enough")
 
         #get middle of hole
         middle = start_of_hole + (abs(end_of_hole-start_of_hole)/2)
@@ -134,18 +134,18 @@ def get_final_point(laser_list):
         #we assume one point is 1 degree
         angle = middle - laser_angle_offset + yaw
 
-        print "middle of hole: " + str(middle)
-        print "angle relative to robot: " + str(middle - laser_angle_offset)
-        print "world angle: " + str(angle)
+        print ("middle of hole: " + str(middle))
+        print ("angle relative to robot: " + str(middle - laser_angle_offset))
+        print ("world angle: " + str(angle))
         #calculate new point
 
-        final_x = x_pos + (0.75 * math.cos(math.radians(angle)))
-        final_y = y_pos + (0.75 * math.sin(math.radians(angle))) 
+        final_x = x_pos + (1.0 * math.cos(math.radians(angle)))
+        final_y = y_pos + (1.0 * math.sin(math.radians(angle))) 
 
-        print "finaler punkt x/y:" +str(final_x)+"/"+str(final_y)
+        print ("finaler punkt x/y:" +str(final_x)+"/"+str(final_y))
 
     else:
-        print "hole is not large enough to be classified as exit"
+        print ("hole is not large enough to be classified as exit")
 
 def callback_laser(msg):
     global laser_vals
@@ -155,6 +155,7 @@ def get_correction(angle):
     #angle = abs(angle)
     angular_speed = 0.0
     global max_angle
+    global yaw
     global max_correction
     global min_angle
 
@@ -178,6 +179,8 @@ def get_correction(angle):
         else:
             #lefthandturn
             angular_speed = 0.0-((max_correction/(max_angle/2))*(max_angle-abs(angle)))
+
+    #angular_speed = 1*(math.radians(angle)-math.radians(yaw))
     return angular_speed
 
 def angle_calc(goal_x,goal_y,self_x,self_y):
@@ -202,6 +205,10 @@ def get_speed(distance, angle_deviation):
     global distance_tolerance
     global old_time
     global speed
+    global max_angle
+
+    if angle_deviation > max_angle/2:
+        angle_deviation = abs(max_angle-angle_deviation)
 
     #make max speed dependant on angle deviation
     #the larger the deviation the correction speed is to 0
@@ -217,7 +224,7 @@ def get_speed(distance, angle_deviation):
     if angle_deviation != 0:
         angle_correction_speed = max_speed*cor_factor
     else:
-        angle_correction_speed = max_speed
+        angle_correction_speed = 0
 
     if angle_correction_speed > max_speed:
         angle_correction_speed = max_speed
@@ -238,8 +245,10 @@ def get_speed(distance, angle_deviation):
 
     if break_speed > acc_speed:
         speed = acc_speed
+        #print ("using acc speed")
     else:
         speed = break_speed
+        #print ("using break speed")
 
     ##if angle deviation is too high
     #if abs(angle_deviation) > angle_offset:
@@ -291,32 +300,36 @@ def callback_marker(msg):
     #speed.angular.z = get_correction(target_angle-yaw+angle_correction)
     if not reached_finish:
         speed.angular.z = get_correction(target_angle-yaw)
-        speed.linear.x, reached_goal = get_speed(distance,target_angle-yaw)
+        #speed.angular.z = get_correction(target_angle)
+        speed.linear.x, reached_goal = get_speed(distance,abs(target_angle-yaw))
     else:
         speed.angular.z = 0
         speed.linear.x, reached_goal = 0, False
     #speed.linear.x = 0.2
     if reached_goal:
-        print "reached checkpoint"
+        print ("reached checkpoint")
         p_counter += 1
         if finished:
-            print "finished moving to target"
+            print ("finished moving to target")
             reached_finish = True
         if p_counter >= len(msg.points):
             if not finished:
                 get_final_point(laser_vals)
-                finished = True            
+                finished = True
+
+          
 
     #publish speed
     speed_pub.publish(speed)
-    #print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
-    #print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
-    #print "------------speed: " + str(speed.linear.x)
-    #print "--target distance: "+str(distance)
-    #print "-----target_angle: " + str(target_angle)
-    #print "------orientation: " + str(yaw)
-    #print "-correction_angle: "+str(target_angle-yaw)
-    #print "-------------------------------------------"
+    if not reached_finish:
+        print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
+        print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
+        print "------------speed: " + str(speed.linear.x)
+        print "--target distance: "+str(distance)
+        print "-----target_angle: " + str(target_angle)
+        print "------orientation: " + str(yaw)
+        print "-correction_angle: "+str(target_angle-yaw)
+        print "-------------------------------------------"
 
 def callback_odom(msg):
     
@@ -346,18 +359,18 @@ def callback_odom(msg):
 rospy.init_node('odom_sub')
 
 odom_topic = rospy.get_param("odom_topicname","/odom")
-marker_topic = rospy.get_param("marker_topicname","/marker")
+marker_topic = rospy.get_param("marker_topicname","/visualization_marker")
 scan_topic = rospy.get_param("scan_topicname","/scan")
 
-print marker_topic
-print odom_topic
-print scan_topic
+print (marker_topic)
+print (odom_topic)
+print (scan_topic)
 
 odom_sub = rospy.Subscriber(str(odom_topic), Odometry, callback_odom)
 marker_sub = rospy.Subscriber(str(marker_topic), Marker, callback_marker)
 scan_sub = rospy.Subscriber(str(scan_topic),LaserScan, callback_laser)
 
-print "mover started"
+print ("mover started")
 
 while not rospy.is_shutdown():
     rospy.spin()
