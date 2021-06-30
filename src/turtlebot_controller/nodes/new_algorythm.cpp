@@ -454,7 +454,7 @@ int main(int argc, char** argv)
     }else{
         // if no right value then values from y5 as default
         exit_row = 172;
-        exit_column = 203;
+        exit_column = 202;
     }
 
     //subscriber to map topic

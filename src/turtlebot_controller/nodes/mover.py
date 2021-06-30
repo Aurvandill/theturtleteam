@@ -41,10 +41,10 @@ angle_offset = rospy.get_param("angle_offset",15.0)
 distance_tolerance = rospy.get_param("distance_tolerance",0.02)
 
 #time over which we want to accelerate
-acc_time = rospy.get_param("acceleration_time",2.5)
+acc_time = rospy.get_param("acceleration_time",5.0)
 
 #maximum robot moving speed
-max_speed = rospy.get_param("max_speed",1.0)
+max_speed = rospy.get_param("max_speed",0.5)
 
 #important for calculation of linear speed
 break_distance = rospy.get_param("break_distance",0.3)
@@ -139,8 +139,8 @@ def get_final_point(laser_list):
         print ("world angle: " + str(angle))
         #calculate new point
 
-        final_x = x_pos + (0.75 * math.cos(math.radians(angle)))
-        final_y = y_pos + (0.75 * math.sin(math.radians(angle))) 
+        final_x = x_pos + (1.0 * math.cos(math.radians(angle)))
+        final_y = y_pos + (1.0 * math.sin(math.radians(angle))) 
 
         print ("finaler punkt x/y:" +str(final_x)+"/"+str(final_y))
 
@@ -245,10 +245,10 @@ def get_speed(distance, angle_deviation):
 
     if break_speed > acc_speed:
         speed = acc_speed
-        print ("using acc speed")
+        #print ("using acc speed")
     else:
         speed = break_speed
-        print ("using break speed")
+        #print ("using break speed")
 
     ##if angle deviation is too high
     #if abs(angle_deviation) > angle_offset:

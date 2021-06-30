@@ -15,6 +15,7 @@ max_dec: 3.0
 
 start_position_x: 200
 start_position_y: 200
-goal: "y4"
+#g/b/y/r 1-10
+goal: "y5"
 
 
