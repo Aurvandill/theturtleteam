@@ -35,19 +35,19 @@ max_angle = rospy.get_param("max_angle",360.0)
 max_correction = rospy.get_param("max_angle_correction",2.5)
 
 #maximum angle difference to start moving
-angle_offset = rospy.get_param("angle_offset",10.0)
+angle_offset = rospy.get_param("angle_offset",15.0)
 
 #tolerance to goal point were we consider it reached
-distance_tolerance = rospy.get_param("distance_tolerance",0.05)
+distance_tolerance = rospy.get_param("distance_tolerance",0.02)
 
 #time over which we want to accelerate
-acc_time = rospy.get_param("acceleration_time",1.5)
+acc_time = rospy.get_param("acceleration_time",2.5)
 
 #maximum robot moving speed
 max_speed = rospy.get_param("max_speed",1.0)
 
 #important for calculation of linear speed
-break_distance = rospy.get_param("break_distance",0.5)
+break_distance = rospy.get_param("break_distance",0.3)
 old_time = 0.0
 speed = 0.0
 
@@ -155,6 +155,7 @@ def get_correction(angle):
     #angle = abs(angle)
     angular_speed = 0.0
     global max_angle
+    global yaw
     global max_correction
     global min_angle
 
@@ -178,6 +179,8 @@ def get_correction(angle):
         else:
             #lefthandturn
             angular_speed = 0.0-((max_correction/(max_angle/2))*(max_angle-abs(angle)))
+
+    #angular_speed = 1*(math.radians(angle)-math.radians(yaw))
     return angular_speed
 
 def angle_calc(goal_x,goal_y,self_x,self_y):
@@ -202,6 +205,10 @@ def get_speed(distance, angle_deviation):
     global distance_tolerance
     global old_time
     global speed
+    global max_angle
+
+    if angle_deviation > max_angle/2:
+        angle_deviation = abs(max_angle-angle_deviation)
 
     #make max speed dependant on angle deviation
     #the larger the deviation the correction speed is to 0
@@ -238,8 +245,10 @@ def get_speed(distance, angle_deviation):
 
     if break_speed > acc_speed:
         speed = acc_speed
+        print ("using acc speed")
     else:
         speed = break_speed
+        print ("using break speed")
 
     ##if angle deviation is too high
     #if abs(angle_deviation) > angle_offset:
@@ -291,7 +300,8 @@ def callback_marker(msg):
     #speed.angular.z = get_correction(target_angle-yaw+angle_correction)
     if not reached_finish:
         speed.angular.z = get_correction(target_angle-yaw)
-        speed.linear.x, reached_goal = get_speed(distance,target_angle-yaw)
+        #speed.angular.z = get_correction(target_angle)
+        speed.linear.x, reached_goal = get_speed(distance,abs(target_angle-yaw))
     else:
         speed.angular.z = 0
         speed.linear.x, reached_goal = 0, False
@@ -305,18 +315,21 @@ def callback_marker(msg):
         if p_counter >= len(msg.points):
             if not finished:
                 get_final_point(laser_vals)
-                finished = True            
+                finished = True
+
+          
 
     #publish speed
     speed_pub.publish(speed)
-    #print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
-    #print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
-    #print "------------speed: " + str(speed.linear.x)
-    #print "--target distance: "+str(distance)
-    #print "-----target_angle: " + str(target_angle)
-    #print "------orientation: " + str(yaw)
-    #print "-correction_angle: "+str(target_angle-yaw)
-    #print "-------------------------------------------"
+    if not reached_finish:
+        print "-target point x/y: "+str(marker_x)+"/"+str(marker_y)
+        print "-our location x/y: "+str(x_pos)+"/"+str(y_pos)
+        print "------------speed: " + str(speed.linear.x)
+        print "--target distance: "+str(distance)
+        print "-----target_angle: " + str(target_angle)
+        print "------orientation: " + str(yaw)
+        print "-correction_angle: "+str(target_angle-yaw)
+        print "-------------------------------------------"
 
 def callback_odom(msg):
     

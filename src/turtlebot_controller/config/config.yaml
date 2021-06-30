@@ -5,7 +5,7 @@ marker_topicname: "/visualization_marker"
 queue_size: "1"
 min_angle: 0.0
 max_angle: 360.0
-max_angle_correction: 2.0
+max_angle_correction: 2.5
 
 speed: 0.4
 brake_distance: 0.0
@@ -16,3 +16,5 @@ max_dec: 3.0
 start_position_x: 200
 start_position_y: 200
 goal: "y4"
+
+

@@ -32,7 +32,17 @@ def cleanup_maplist():
         if last_y != cur_y:
             y_changed = True
         if x_changed and y_changed:
-            newlist.append(Point(last_x, last_y))
+            #tmp_x = 0.0
+            tmp_y = 0.0
+            #if last_x > 0.0:
+            #    tmp_x = float(last_x) -0.02
+            #else:
+            #    tmp_x = float(last_x) +0.02
+            if last_y > 0.0:
+                tmp_y = float(last_y) +0.025
+            else:
+                tmp_y = float(last_y) -0.025
+            newlist.append(Point(last_x, tmp_y))
             x_changed = False
             y_changed = False
         last_x = item.get_x()
@@ -66,7 +76,7 @@ def pubValues():
         coordinate.y = float(item.get_y())
         coordinate.z = 0
         marker.points.append(coordinate)
-    rate = rospy.Rate(50)
+    rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         pub.publish(marker)
         rate.sleep()
