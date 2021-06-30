@@ -12,3 +12,7 @@ brake_distance: 0.0
 
 crash_topicname: /imu
 max_dec: 3.0
+
+start_position_x: 200
+start_position_y: 200
+goal: "y4"

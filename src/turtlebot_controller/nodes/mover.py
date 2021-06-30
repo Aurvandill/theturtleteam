@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from turtlebot_controller import main
 
@@ -88,7 +88,7 @@ def get_final_point(laser_list):
 
     new_list = list()
     
-    print "laenge lsite laserdaten: "+str(len(laser_list))
+    print("laenge lsite laserdaten: "+str(len(laser_list)))
     i = len(laser_list) - laser_angle_offset
     while i < len(laser_list):
         new_list.append(laser_list[i])
@@ -99,17 +99,17 @@ def get_final_point(laser_list):
         new_list.append(laser_list[i])
         i += 1
     
-    print "laenge lsite laserdaten verarbeitet: "+str(len(new_list))
+    print ("laenge lsite laserdaten verarbeitet: "+str(len(new_list)))
 
     i = 0
     last_val = "9999"
     start_of_hole = 9999
     end_of_hole = 9999
     while i < len(new_list):
-        print last_val
-        print i
-        print str(new_list[i])
-        print "--------------------"
+        print(last_val)
+        print (i)
+        print (str(new_list[i]))
+        print ("--------------------")
         if last_val == "inf" and start_of_hole == 9999:
             start_of_hole = i-1
         
@@ -120,12 +120,12 @@ def get_final_point(laser_list):
         i += 1
 
     #angle calculation
-    print "we found "+str(abs(start_of_hole-end_of_hole))+" consecutive free spots in laser data"
-    print "start of hole: "+str(start_of_hole)
-    print "end of hole: "+str(end_of_hole)
+    print ("we found "+str(abs(start_of_hole-end_of_hole))+" consecutive free spots in laser data")
+    print ("start of hole: "+str(start_of_hole))
+    print ("end of hole: "+str(end_of_hole))
 
     if abs(start_of_hole-end_of_hole) > min_free_spots:
-        print "hole is large enough"
+        print ("hole is large enough")
 
         #get middle of hole
         middle = start_of_hole + (abs(end_of_hole-start_of_hole)/2)
@@ -134,18 +134,18 @@ def get_final_point(laser_list):
         #we assume one point is 1 degree
         angle = middle - laser_angle_offset + yaw
 
-        print "middle of hole: " + str(middle)
-        print "angle relative to robot: " + str(middle - laser_angle_offset)
-        print "world angle: " + str(angle)
+        print ("middle of hole: " + str(middle))
+        print ("angle relative to robot: " + str(middle - laser_angle_offset))
+        print ("world angle: " + str(angle))
         #calculate new point
 
         final_x = x_pos + (0.75 * math.cos(math.radians(angle)))
         final_y = y_pos + (0.75 * math.sin(math.radians(angle))) 
 
-        print "finaler punkt x/y:" +str(final_x)+"/"+str(final_y)
+        print ("finaler punkt x/y:" +str(final_x)+"/"+str(final_y))
 
     else:
-        print "hole is not large enough to be classified as exit"
+        print ("hole is not large enough to be classified as exit")
 
 def callback_laser(msg):
     global laser_vals
@@ -217,7 +217,7 @@ def get_speed(distance, angle_deviation):
     if angle_deviation != 0:
         angle_correction_speed = max_speed*cor_factor
     else:
-        angle_correction_speed = max_speed
+        angle_correction_speed = 0
 
     if angle_correction_speed > max_speed:
         angle_correction_speed = max_speed
@@ -297,10 +297,10 @@ def callback_marker(msg):
         speed.linear.x, reached_goal = 0, False
     #speed.linear.x = 0.2
     if reached_goal:
-        print "reached checkpoint"
+        print ("reached checkpoint")
         p_counter += 1
         if finished:
-            print "finished moving to target"
+            print ("finished moving to target")
             reached_finish = True
         if p_counter >= len(msg.points):
             if not finished:
@@ -346,18 +346,18 @@ def callback_odom(msg):
 rospy.init_node('odom_sub')
 
 odom_topic = rospy.get_param("odom_topicname","/odom")
-marker_topic = rospy.get_param("marker_topicname","/marker")
+marker_topic = rospy.get_param("marker_topicname","/visualization_marker")
 scan_topic = rospy.get_param("scan_topicname","/scan")
 
-print marker_topic
-print odom_topic
-print scan_topic
+print (marker_topic)
+print (odom_topic)
+print (scan_topic)
 
 odom_sub = rospy.Subscriber(str(odom_topic), Odometry, callback_odom)
 marker_sub = rospy.Subscriber(str(marker_topic), Marker, callback_marker)
 scan_sub = rospy.Subscriber(str(scan_topic),LaserScan, callback_laser)
 
-print "mover started"
+print ("mover started")
 
 while not rospy.is_shutdown():
     rospy.spin()
