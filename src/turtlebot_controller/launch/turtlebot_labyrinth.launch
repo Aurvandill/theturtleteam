@@ -3,10 +3,10 @@
   <arg name="x_pos" default="0.0"/>
   <arg name="y_pos" default="0.0"/>
   <arg name="z_pos" default="0.0"/>
-  <arg name="map_file" default="$(find turtlebot_controller)/rotatedMap.yaml"/>
+  <arg name="map_file" default="$(find turtlebot_controller)/map/rotatedMap.yaml"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find turtlebot_controller)/lab_final2.world"/>
+    <arg name="world_name" value="$(find turtlebot_controller)/worlds/lab_final2.world"/>
     <arg name="paused" value="false"/>
     <arg name="use_sim_time" value="true"/>
     <arg name="gui" value="true"/>
@@ -21,14 +21,18 @@
     <arg name="model" value="$(arg model)"/>
   </include>
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_controller)/rviz_map.rviz"/>
-
+  <!--start rviz-->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_controller)/rviz/rviz_map.rviz"/>
+  <!--start map server with static map-->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" /> 
-
+  <!--start tf transformer-->
   <node name="link1_broadcaster" pkg="tf" type="static_transform_publisher" args="0.0 0.0 0.0 0.0 0.0 0.0 map odom 100" />
-
-  <rosparam command="load" file="$(find turtlebot_controller)/config.yaml"/>
+  <!--start config-->
+  <rosparam command="load" file="$(find turtlebot_controller)/config/config.yaml"/>
+  <!--start service for publishing marker-->
   <node name="marker_service" pkg="turtlebot_controller" type="markerService.py" output="screen"/>
+  <!--start node for calculating the shortest way to exit-->
   <node name="algorythm_test" pkg="turtlebot_controller" type="new_algorythm" output="screen"/>
+  <!--start node for drving the turtlebot-->
   <node name="odom_sub" pkg="turtlebot_controller" type="mover.py" output="screen"/>
 </launch>
