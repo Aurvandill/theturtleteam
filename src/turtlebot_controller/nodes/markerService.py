@@ -17,6 +17,7 @@ class Point:
     def get_y(self):
         return self.y
 
+#extract corner points from list of points
 def cleanup_maplist():
     global mapList
     x_changed = False
@@ -24,6 +25,7 @@ def cleanup_maplist():
     last_x = 0
     last_y = 0
     newlist = []
+    #add point to newlist if x and y changed
     for item in mapList:
         cur_x = item.get_x()
         cur_y = item.get_y()
@@ -32,12 +34,8 @@ def cleanup_maplist():
         if last_y != cur_y:
             y_changed = True
         if x_changed and y_changed:
-            #tmp_x = 0.0
             tmp_y = 0.0
-            #if last_x > 0.0:
-            #    tmp_x = float(last_x) -0.02
-            #else:
-            #    tmp_x = float(last_x) +0.02
+            #tune the values
             if last_y > 0.0:
                 tmp_y = float(last_y) +0.025
             else:
@@ -47,19 +45,24 @@ def cleanup_maplist():
             y_changed = False
         last_x = item.get_x()
         last_y = item.get_y()
+    #get last point
     last_x = mapList[len(mapList) - 1].get_x()
     last_y = mapList[len(mapList) - 1].get_y()
+    #tune value
     if last_y > 0.0:
         last_y = float(last_y) +0.025
     else:
         last_y = float(last_y) -0.025
     newlist.append(Point(last_x, last_y))
+    #return list with corner points
     return newlist
 
 
+#publish marker
 def pubValues():
     global pub
     global mapList
+    #initialize marker
     linecolor = ColorRGBA()
     linecolor.b = 1.0
     linecolor.a = 1
@@ -76,20 +79,24 @@ def pubValues():
     marker.pose.position.y = 0
     marker.pose.position.z = 0
     marker.color = linecolor
+    #add points to marker
     for item in cleanup_maplist():
         coordinate = Coordinates()
         coordinate.x = float(item.get_x())
         coordinate.y = float(item.get_y())
         coordinate.z = 0
         marker.points.append(coordinate)
+    #publish marker
     rate = rospy.Rate(15)
     while not rospy.is_shutdown():
         pub.publish(marker)
         rate.sleep()
 
 
+#handle from service
 def handle(request):
     global mapList
+    #extract coordinates from request and put them into mapList
     data = str(request.data)
     tmpList = data.split(";")
     for item in tmpList:
@@ -99,6 +106,7 @@ def handle(request):
     pubValues()
 
 
+#initialize node, service, publisher
 def init():
     global pub
     rospy.init_node("marker_service")
